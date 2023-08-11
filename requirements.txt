@@ -1,2 +1,3 @@
 streamlit
-SpeechRecognition
+speech_recognition
+speedrecognition
