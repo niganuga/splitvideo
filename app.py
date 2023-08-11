@@ -1,36 +1,49 @@
 import streamlit as st
 import subprocess
 import os
+import speech_recognition as sr
 
-def split_video(video_file, split_time):
-    # Split the video into two parts
-    base_name = os.path.basename(video_file)
-    name, ext = os.path.splitext(base_name)
-    subprocess.run(["ffmpeg", "-i", video_file, "-t", split_time, "-c", "copy", f"{name}_part1{ext}"])
-    subprocess.run(["ffmpeg", "-ss", split_time, "-i", video_file, "-c", "copy", f"{name}_part2{ext}"])
+def extract_audio_from_video(video_path, audio_path):
+    # Extract audio from the video
+    subprocess.run(["ffmpeg", "-i", video_path, "-q:a", "0", "-map", "a", audio_path, "-y"])
+
+def transcribe_audio(audio_path):
+    r = sr.Recognizer()
+    with sr.AudioFile(audio_path) as source:
+        audio = r.record(source)
+    try:
+        # Use Google Web Speech API to transcribe the audio
+        return r.recognize_google(audio, show_all=True)
+    except sr.UnknownValueError:
+        return "Google Web Speech API could not understand audio"
+    except sr.RequestError as e:
+        return f"Could not request results from Google Web Speech API; {e}"
 
 # Title
-st.title('Video Splitter')
+st.title('Video Transcriber')
 
 # Upload the video file
 uploaded_file = st.file_uploader("Choose a video...", type=['mp4', 'mkv', 'avi'])
 
 if uploaded_file is not None:
     st.video(uploaded_file)
-    
-    # Choose the split time
-    split_time = st.text_input('Enter split time in HH:MM:SS format', '00:10:00')
-    
-    if st.button('Split Video'):
+
+    if st.button('Generate Transcript'):
         # Save the uploaded file to a temporary location
         video_path = os.path.join('temp', 'temp_video.mp4')
+        audio_path = os.path.join('temp', 'temp_audio.wav')
         with open(video_path, 'wb') as f:
             f.write(uploaded_file.read())
-        
-        # Split the video
-        split_video(video_path, split_time)
-        
-        # Display download links for split videos
-        st.write('Download the split videos:')
-        st.write(f'[Download Part 1](temp/{os.path.splitext(os.path.basename(video_path))[0]}_part1.mp4)')
-        st.write(f'[Download Part 2](temp/{os.path.splitext(os.path.basename(video_path))[0]}_part2.mp4)')
+
+        # Extract audio from the video
+        extract_audio_from_video(video_path, audio_path)
+
+        # Transcribe the audio
+        result = transcribe_audio(audio_path)
+
+        if isinstance(result, dict) and 'alternative' in result:
+            for idx, transcript in enumerate(result['alternative']):
+                st.write(f"Transcript {idx+1}:")
+                st.write(transcript['transcript'])
+        else:
+            st.write(result)
