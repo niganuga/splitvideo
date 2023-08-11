@@ -1,7 +1,7 @@
 import streamlit as st
 import subprocess
 import os
-import speechrecognition as sr
+import speech_recognition as sr
 
 def extract_audio_from_video(video_path, audio_path):
     # Extract audio from the video
@@ -29,6 +29,10 @@ if uploaded_file is not None:
     st.video(uploaded_file)
 
     if st.button('Generate Transcript'):
+        # Ensure the 'temp' directory exists
+        if not os.path.exists('temp'):
+            os.makedirs('temp')
+
         # Save the uploaded file to a temporary location
         video_path = os.path.join('temp', 'temp_video.mp4')
         audio_path = os.path.join('temp', 'temp_audio.wav')
