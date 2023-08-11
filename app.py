@@ -1,7 +1,7 @@
 import streamlit as st
 import subprocess
 import os
-import speech_recognition as sr
+import speechrecognition as sr
 
 def extract_audio_from_video(video_path, audio_path):
     # Extract audio from the video
